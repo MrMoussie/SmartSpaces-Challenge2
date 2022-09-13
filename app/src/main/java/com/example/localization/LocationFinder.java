@@ -3,6 +3,9 @@ package com.example.localization;
 import java.util.ArrayList;
 
 public class LocationFinder {
+
+    ArrayList<iBeacon> connectedBeacons;
+
     public double calculateDistance(Location loc1, Location loc2){
         //calculate distance between two coordinates
         final double R = 6371000;
@@ -32,14 +35,44 @@ public class LocationFinder {
     }
 
     private Location averageLocation(ArrayList<iBeacon> beacons) {    // arrayList of active beacons
-        return null;
+        Location thisLocation = new Location();
+        double avgLat = 0;
+        double avgLon = 0;
+        int N = beacons.size();
+
+        for(iBeacon beacon: beacons){
+            avgLat += beacon.getLocation().getLatitude();
+            avgLon += beacon.getLocation().getLongitude();
+        }
+        avgLat/=N;
+        avgLon/=N;
+        thisLocation.setLatitude(avgLat);
+        thisLocation.setLongitude(avgLon);
+
+        return thisLocation;
     }
 
     private double calculateError(Location location, ArrayList<iBeacon> beacons) {
-        return 0.0;
+        double error = 0.0;
+        int N = beacons.size();
+        for(iBeacon beacon: beacons){
+            double distance = calculateDistanceCircle(location, beacon.getLocation(), beacon.getDistance());
+            error += distance*distance;
+        }
+        error/= N;
+        return error;
+    }
+
+    private int findFloor(ArrayList<iBeacon> beacons){
+        return 0;
     }
 
     public Location optimisation(ArrayList<iBeacon> beacons) {
+        //Fill list with new beacons
+        connectedBeacons = beacons;
+
+
+
         return null;
     }
 
