@@ -13,7 +13,8 @@
         <meta-data android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyBeQMASqIPJGh3_8nehbtbndqbwJg70UKU"/>
 
-        <activity android:name="com.example.localization.MapsActivity">
+        <activity android:name="com.example.localization.MapsActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
