@@ -19,6 +19,8 @@ import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
 import org.altbeacon.beacon.Region;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 /**
@@ -28,7 +30,7 @@ public class MapsActivity extends AppCompatActivity {
 
     private static final String TAG = "[SYSTEM]";
     private static final String IBEACON = "m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24";
-
+    private static final String FILENAME = "beacon_list.xlsx";
 
     private SupportMapFragment smf;
     private BeaconManager beaconManager;
@@ -67,6 +69,13 @@ public class MapsActivity extends AppCompatActivity {
      */
     private void init() {
         this.smf.getMapAsync(this::onMapReady);
+
+        try (InputStream in = getResources().getAssets().open(FILENAME)) {
+            new ExcelReader(in).fetchAllBeacons();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         this.setupBeaconDetection();
     }
 
