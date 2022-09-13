@@ -1,6 +1,7 @@
 package com.example.localization;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -17,6 +18,13 @@ import java.util.Set;
 public class ExcelReader {
     private InputStream in;
     private Set<iBeacon> beaconsList; // Stores all beacon objects retrieved from the Excel document
+
+    private static final int ID_INDEX = 0;
+    private static final int NAME_INDEX = 1;
+    private static final int MAC_INDEX = 2;
+    private static final int LONGITUDE_INDEX = 3;
+    private static final int LATITUDE_INDEX = 4;
+    private static final int FLOOR_INDEX = 5;
 
     /**
      * Disallowing use of empty constructor
@@ -45,23 +53,19 @@ public class ExcelReader {
 
         //Iterate through each rows one by one
         for (Row row : sheet) {
-            //For each row, iterate through all the columns
-            Iterator<Cell> cellIterator = row.cellIterator();
+            // Ignore first row
+            if (row.getCell(ID_INDEX).getCellType() == CellType.STRING) continue;
 
-            while (cellIterator.hasNext()) {
-                Cell cell = cellIterator.next();
+            // Get values from Excel document
+            int id = (int) row.getCell(ID_INDEX).getNumericCellValue();
+            String name = row.getCell(NAME_INDEX).getStringCellValue();
+            String mac = row.getCell(MAC_INDEX).getStringCellValue();
+            double longitude = Double.parseDouble(row.getCell(LONGITUDE_INDEX).getStringCellValue());
+            double latitude = Double.parseDouble(row.getCell(LATITUDE_INDEX).getStringCellValue());
+            int floor = (int) row.getCell(FLOOR_INDEX).getNumericCellValue();
 
-                //Check the cell type and format accordingly
-                switch (cell.getCellType()) {
-                    case NUMERIC:
-                        System.out.print(cell.getNumericCellValue() + "\t");
-                        break;
-                    case STRING:
-                        System.out.print(cell.getStringCellValue() + "\t");
-                        break;
-                }
-            }
-            System.out.println("");
+            // Create iBeacon object and add to set
+            this.beaconsList.add(new iBeacon(id, name, mac, longitude, latitude, floor));
         }
     }
 }
