@@ -82,7 +82,7 @@ public class MapsActivity extends AppCompatActivity {
                 System.out.println("[SYSTEM] list size: " + beacons.size());
                 Log.i(TAG, "Beacon detected: "+beacon.getDistance() +
                         " meters away and the name is " + beacon.getBluetoothName() +
-                        " and RSI is " + beacon.getRssi() + ".");
+                        " and RSSI is " + beacon.getRssi() + ".");
                 // TODO
             }
         });
