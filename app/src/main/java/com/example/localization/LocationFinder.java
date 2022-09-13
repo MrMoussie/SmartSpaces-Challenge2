@@ -5,6 +5,9 @@ import java.util.ArrayList;
 public class LocationFinder {
 
     ArrayList<iBeacon> connectedBeacons;
+    int myFloor = 0;
+
+    final double stepSize = 0.00001;
 
     public double calculateDistance(Location loc1, Location loc2){
         //calculate distance between two coordinates
@@ -63,6 +66,27 @@ public class LocationFinder {
         return error;
     }
 
+    private Location compareNeighbours(Location location, double error, ArrayList<iBeacon> beacons){
+        //calculate position of 4 neighbours using stepSize
+        Location NeighbourNorth = new Location(location.getLongitude(), location.getLatitude()+stepSize);
+        Location NeighbourSouth = new Location(location.getLongitude(), location.getLatitude()-stepSize);
+        Location NeighbourEast = new Location(location.getLongitude()+stepSize, location.getLatitude());
+        Location NeighbourWest = new Location(location.getLongitude()-stepSize, location.getLatitude());
+
+        //calculate the four errors
+        double errorNorth = calculateError(NeighbourNorth, beacons);
+        double errorSouth = calculateError(NeighbourSouth, beacons);
+        double errorEast = calculateError(NeighbourEast, beacons);
+        double errorWest = calculateError(NeighbourWest, beacons);
+        ArrayList<Double> errorList = new ArrayList<Double>();
+        errorList.add(errorNorth);
+        errorList.add(errorSouth);
+        errorList.add(errorEast);
+        errorList.add(errorWest);
+        errorList.add(error);
+
+    }
+
     private int findFloor(ArrayList<iBeacon> beacons){
         return 0;
     }
@@ -71,7 +95,19 @@ public class LocationFinder {
         //Fill list with new beacons
         connectedBeacons = beacons;
 
+        //Find on which floor you are
 
+        //Remove all other floors
+
+        //find average location of beacons
+        Location lastLocation = averageLocation(beacons);
+        double lastError = calculateError(lastLocation, beacons);
+
+        //check neighbours of starting location error
+
+        //move to lowest error => check those neighbours
+
+        //if all neighbours higher error return that location
 
         return null;
     }
