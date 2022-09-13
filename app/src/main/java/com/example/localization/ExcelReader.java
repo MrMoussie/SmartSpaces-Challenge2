@@ -1,6 +1,5 @@
 package com.example.localization;
 
-import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -61,10 +60,11 @@ public class ExcelReader {
             String mac = row.getCell(MAC_INDEX).getStringCellValue();
             double longitude = Double.parseDouble(row.getCell(LONGITUDE_INDEX).getStringCellValue());
             double latitude = Double.parseDouble(row.getCell(LATITUDE_INDEX).getStringCellValue());
+            Location location = new Location(longitude, latitude);
             int floor = (int) row.getCell(FLOOR_INDEX).getNumericCellValue();
 
             // Create iBeacon object and add to set
-            this.beaconsList.add(new iBeacon(id, name, mac, longitude, latitude, floor));
+            this.beaconsList.add(new iBeacon(id, name, mac, location, floor));
         }
     }
 }

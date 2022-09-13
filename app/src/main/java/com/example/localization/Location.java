@@ -1,21 +1,25 @@
 package com.example.localization;
 
+/**
+ * This class represents a location on the map as an object containing longitude and latitude.
+ */
 public class Location {
     double longitude;
     double latitude;
 
-    public Location() {
-        this.longitude = 0;
-        this.latitude = 0;
-    }
+    /**
+     * Disallowing use of empty constructor
+     */
+    private Location() {}
 
+    /**
+     * Create an instance of this location object.
+     * @param longitude longitude
+     * @param latitude latitude
+     */
     public Location(double longitude, double latitude) {
         this.longitude = longitude;
         this.latitude = latitude;
-    }
-
-    public Location(String name, double longitude, double latitude, double radius) {
-
     }
 
     public void setLongitude(double longitude) {

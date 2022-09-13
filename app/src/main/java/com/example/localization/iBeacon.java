@@ -7,9 +7,9 @@ public class iBeacon {
     private int id;
     private String name;
     private String mac;
-    private double longitude;
-    private double latitude;
+    private Location location;
     private int floor;
+    private double distance;
 
     /**
      * Disallowing empty constructor usage.
@@ -21,16 +21,14 @@ public class iBeacon {
      * @param id device_id
      * @param name device_name
      * @param mac mac_address
-     * @param longitude longitude
-     * @param latitude latitude
+     * @param location Location location object contains longitude and latitude
      * @param floor floor number
      */
-    public iBeacon(int id, String name, String mac, double longitude, double latitude, int floor) {
+    public iBeacon(int id, String name, String mac, Location location, int floor) {
         this.id = id;
         this.name = name;
         this.mac = mac;
-        this.longitude = longitude;
-        this.latitude = latitude;
+        this.location = location;
         this.floor = floor;
     }
 
@@ -46,15 +44,19 @@ public class iBeacon {
         return mac;
     }
 
-    public double getLongitude() {
-        return longitude;
-    }
-
-    public double getLatitude() {
-        return latitude;
+    public Location getLocation() {
+        return location;
     }
 
     public int getFloor() {
         return floor;
+    }
+
+    public double getDistance() {
+        return distance;
+    }
+
+    public void setDistance(double distance) {
+        this.distance = distance;
     }
 }

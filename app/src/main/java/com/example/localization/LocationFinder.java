@@ -31,15 +31,15 @@ public class LocationFinder {
         return distance - radius;
     }
 
-    private Location averageLocation(ArrayList<LocBeacon> beacons) {    // arrayList of active beacons
+    private Location averageLocation(ArrayList<iBeacon> beacons) {    // arrayList of active beacons
         return null;
     }
 
-    private double calculateError(Location location, ArrayList<LocBeacon> beacons) {
+    private double calculateError(Location location, ArrayList<iBeacon> beacons) {
         return 0.0;
     }
 
-    public Location optimisation(ArrayList<LocBeacon> beacons) {
+    public Location optimisation(ArrayList<iBeacon> beacons) {
         return null;
     }
 
