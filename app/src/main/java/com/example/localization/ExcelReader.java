@@ -12,18 +12,32 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * This class represents an Excel Reader object.
+ */
 public class ExcelReader {
     private InputStream in;
-    private Set<iBeacon> beaconsList;
+    private Set<iBeacon> beaconsList; // Stores all beacon objects retrieved from the Excel document
 
+    /**
+     * Disallowing use of empty constructor
+     */
     private ExcelReader() {}
 
+    /**
+     * Constructor initializes this object with an input streamer
+     * @param in Input stream object to read from
+     */
     public ExcelReader(InputStream in) {
         this.in = in;
         this.beaconsList = new HashSet<>();
     }
 
-    public void fetchAllData() throws IOException {
+    /**
+     * Fetches all the beacons from the excel file
+     * @throws IOException
+     */
+    public void fetchAllBeacons() throws IOException {
         //Create Workbook instance holding reference to .xlsx file
         XSSFWorkbook workbook = new XSSFWorkbook(this.in);
 

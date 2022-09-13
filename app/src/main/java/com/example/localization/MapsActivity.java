@@ -13,7 +13,6 @@ import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -33,15 +32,10 @@ public class MapsActivity extends AppCompatActivity {
 
         this.smf = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.google_map);
 
+        // Needed to make Excel reading possible
         System.setProperty("org.apache.poi.javax.xml.stream.XMLInputFactory", "com.fasterxml.aalto.stax.InputFactoryImpl");
         System.setProperty("org.apache.poi.javax.xml.stream.XMLOutputFactory", "com.fasterxml.aalto.stax.OutputFactoryImpl");
         System.setProperty("org.apache.poi.javax.xml.stream.XMLEventFactory", "com.fasterxml.aalto.stax.EventFactoryImpl");
-
-        try (InputStream in = getResources().getAssets().open(FILEPATH)) {
-            new ExcelReader(in).fetchAllData();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
         Dexter.withContext(getApplicationContext())
                 .withPermission(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -64,15 +58,18 @@ public class MapsActivity extends AppCompatActivity {
 
     /**
      * Initialization method for this class.
-     * This method sets up permissions, tasks and initializes event listeners and managers.
      */
     private void init() {
         this.smf.getMapAsync(this::onMapReady);
+
+        try (InputStream in = getResources().getAssets().open(FILEPATH)) {
+            new ExcelReader(in).fetchAllBeacons();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
-     * Initializes the cluster manager when the map is ready
-     *
      * @param googleMap maps object passed when maps is ready
      */
     private void onMapReady(GoogleMap googleMap) {
