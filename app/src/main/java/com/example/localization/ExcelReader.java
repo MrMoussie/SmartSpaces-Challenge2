@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public class ExcelReader {
     private InputStream in;
-    private Set<iBeacon> beaconsList; // Stores all beacon objects retrieved from the Excel document
+    private Set<iBeacon> allBeacons; // Stores all beacon objects retrieved from the Excel document
 
     private static final int ID_INDEX = 0;
     private static final int NAME_INDEX = 1;
@@ -30,19 +30,20 @@ public class ExcelReader {
     private ExcelReader() {}
 
     /**
-     * Constructor initializes this object with an input streamer
+     * Constructor initializes this object with an input streamer and fetches all beacons
      * @param in Input stream object to read from
      */
-    public ExcelReader(InputStream in) {
+    public ExcelReader(InputStream in) throws IOException {
         this.in = in;
-        this.beaconsList = new HashSet<>();
+        this.allBeacons = new HashSet<>();
+        this.fetchAllBeacons();
     }
 
     /**
      * Fetches all the beacons from the excel file
      * @throws IOException
      */
-    public void fetchAllBeacons() throws IOException {
+    private void fetchAllBeacons() throws IOException {
         //Create Workbook instance holding reference to .xlsx file
         XSSFWorkbook workbook = new XSSFWorkbook(this.in);
 
@@ -64,7 +65,11 @@ public class ExcelReader {
             int floor = (int) row.getCell(FLOOR_INDEX).getNumericCellValue();
 
             // Create iBeacon object and add to set
-            this.beaconsList.add(new iBeacon(id, name, mac, location, floor));
+            this.allBeacons.add(new iBeacon(id, name, mac, location, floor));
         }
+    }
+
+    public Set<iBeacon> getAllBeacons() {
+        return this.allBeacons;
     }
 }

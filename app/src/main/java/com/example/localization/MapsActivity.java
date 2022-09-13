@@ -1,8 +1,10 @@
 package com.example.localization;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.WindowManager;
@@ -21,7 +23,10 @@ import org.altbeacon.beacon.Region;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Array;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * This class contains the main Google Maps activity.
@@ -34,6 +39,8 @@ public class MapsActivity extends AppCompatActivity {
 
     private SupportMapFragment smf;
     private BeaconManager beaconManager;
+    private ExcelReader excelReader;
+    private ArrayList<iBeacon> connectedBeacons;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,13 +77,13 @@ public class MapsActivity extends AppCompatActivity {
     private void init() {
         this.smf.getMapAsync(this::onMapReady);
 
+        this.connectedBeacons = new ArrayList<>();
         try (InputStream in = getResources().getAssets().open(FILENAME)) {
-            new ExcelReader(in).fetchAllBeacons();
+            this.excelReader = new ExcelReader(in);
+            this.setupBeaconDetection();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        this.setupBeaconDetection();
     }
 
     /**
@@ -87,12 +94,31 @@ public class MapsActivity extends AppCompatActivity {
         this.beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(IBEACON));
         beaconManager.addRangeNotifier((beacons, region) -> {
             if (beacons.size() > 0) {
-                Beacon beacon = beacons.iterator().next();
-                System.out.println("[SYSTEM] list size: " + beacons.size());
-                Log.i(TAG, "Beacon detected: "+beacon.getDistance() +
-                        " meters away and the name is " + beacon.getBluetoothName() +
-                        " and RSSI is " + beacon.getRssi() + ".");
-                // TODO
+
+                for (Beacon beacon : beacons) {
+//                    System.out.println("[SYSTEM] FOUND DEVICE NAME " + beacon.getBluetoothName() + " WITH ADDRESS " + beacon.getBluetoothAddress()
+//                    + " WITH ID3 " + beacon.getId3());
+                    Optional<iBeacon> value = this.connectedBeacons.stream().filter(x -> x.getMac().equals(beacon.getBluetoothAddress())).findFirst();
+
+                    if (beacon.getRssi() < -60) {
+                        // Deletes the iBeacon if it exists in the set of active beacons
+                        value.ifPresent(iBeacon -> this.connectedBeacons.remove(iBeacon));
+                    } else {
+                        // Update beacon information if it already exists in the set of all active beacons
+                        if (value.isPresent()) {
+                            iBeacon currentBeacon = value.get();
+                            currentBeacon.setDistance(beacon.getDistance());
+                            currentBeacon.setRssi(beacon.getRssi());
+                        } else { // Retrieve beacon from excel reader and put it in the active set of beacons
+                            Optional<iBeacon> foundBeacon = this.excelReader.getAllBeacons().stream().filter(x -> x.getId() == beacon.getId3().toInt()).findFirst();
+                            foundBeacon.ifPresent(iBeacon -> {
+                                iBeacon.setDistance(beacon.getDistance());
+                                iBeacon.setRssi(beacon.getRssi());
+                                this.connectedBeacons.add(iBeacon);
+                            });
+                        }
+                    }
+                }
             }
         });
 
