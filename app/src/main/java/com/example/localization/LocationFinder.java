@@ -3,9 +3,6 @@ package com.example.localization;
 import java.util.ArrayList;
 
 public class LocationFinder {
-    float longitude;
-    float latitude;
-
     public double calculateDistance(Location loc1, Location loc2){
         //calculate distance between two coordinates
         final double R = 6371000;
