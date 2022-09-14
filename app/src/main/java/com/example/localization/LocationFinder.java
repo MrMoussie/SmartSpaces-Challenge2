@@ -1,8 +1,32 @@
 package com.example.localization;
 
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class LocationFinder {
+
+    ArrayList<iBeacon> connectedBeacons;
+    int myFloor = 0;
+    double floorDistance = 3;
+    Location nextLocation;
+
+    final double stepSize = 0.00001;
+
+    /**
+     * Calculates the distance between two coordinate pairs
+     * @param loc1 coordinate pair of the first beacon
+     * @param loc2 coordinate pair of the second beacon
+     * @return distance between two beacons
+     */
     public double calculateDistance(Location loc1, Location loc2){
         //calculate distance between two coordinates
         final double R = 6371000;
@@ -11,17 +35,8 @@ public class LocationFinder {
         double latDiff = Math.toRadians(loc2.getLatitude() - loc1.getLatitude());
         double longDiff = Math.toRadians(loc2.getLongitude() - loc1.getLongitude());
 
-//        double a = Math.sin(latDiff/2) * Math.sin(latDiff/2) + Math.cos(lat1) * Math.cos(lat2) *
-//                Math.sin(longDiff/2) * Math.sin(longDiff/2);
-
         double a = Math.pow(Math.sin(latDiff / 2), 2) + Math.pow(Math.sin(longDiff / 2), 2) *
                 Math.cos(lat1) * Math.cos(lat2);
-
-//        double dLat = loc2.getLatitude() * (Math.PI / 180) - loc1.getLatitude() * (Math.PI / 180);
-//        double dLon = loc2.getLongitude() * (Math.PI / 180) - loc1.getLongitude() * (Math.PI / 180);
-//        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-//                Math.cos(loc1.getLatitude() * Math.PI / 180) * Math.cos(loc2.getLatitude() * Math.PI / 180) +
-//                Math.sin(dLon/2) * Math.sin(dLon/2);
         double c = 2 * Math.asin(Math.sqrt(a));
         return R * c;
     }
@@ -31,19 +46,159 @@ public class LocationFinder {
         return distance - radius;
     }
 
+    /**
+     * Calculate the average location using the list with active beacons
+     * @param beacons ArrayList of active beacons
+     * @return average location derived from the list of active beacons
+     */
     private Location averageLocation(ArrayList<iBeacon> beacons) {    // arrayList of active beacons
+        Location thisLocation = new Location();
+        double avgLat = 0;
+        double avgLon = 0;
+        int N = beacons.size();
+
+        for(iBeacon beacon: beacons){
+            avgLat += beacon.getLocation().getLatitude();
+            avgLon += beacon.getLocation().getLongitude();
+        }
+        avgLat/=N;
+        avgLon/=N;
+        thisLocation.setLatitude(avgLat);
+        thisLocation.setLongitude(avgLon);
+
+        return thisLocation;
+    }
+
+    /**
+     * Method for calculating the error between the active beacons
+     * @param location
+     * @param beacons
+     * @return
+     */
+    private double calculateError(Location location, ArrayList<iBeacon> beacons) {
+        double error = 0.0;
+        int N = beacons.size();
+        for(iBeacon beacon: beacons){
+            double distance = calculateDistanceCircle(location, beacon.getLocation(), beacon.getDistance());
+            error += distance*distance;
+        }
+        error/= N;
+        return error;
+    }
+
+    /**
+     * Method for determining, where should the localization be updated
+     * @param location coordinate pair of the beacon
+     * @param error value of the error calculated
+     * @param beacons list of currently available beacons
+     * @return location where the localization should be updated
+     */
+    private Location compareNeighbours(Location location, double error, ArrayList<iBeacon> beacons){
+        HashMap<Double, Location> beaconList = new HashMap<Double, Location>();
+        ArrayList<Double> errorList = new ArrayList<Double>();
+
+        //calculate position of 4 neighbours using stepSize
+        Location NeighbourNorth = new Location(location.getLongitude(), location.getLatitude()+stepSize);
+        Location NeighbourSouth = new Location(location.getLongitude(), location.getLatitude()-stepSize);
+        Location NeighbourEast = new Location(location.getLongitude()+stepSize, location.getLatitude());
+        Location NeighbourWest = new Location(location.getLongitude()-stepSize, location.getLatitude());
+
+        //calculate the four errors
+        double errorNorth = calculateError(NeighbourNorth, beacons);
+        double errorSouth = calculateError(NeighbourSouth, beacons);
+        double errorEast = calculateError(NeighbourEast, beacons);
+        double errorWest = calculateError(NeighbourWest, beacons);
+
+        // adds the potential neighbours with their errors to a hashmap (creates a pair of (errorValue,Neighbour))
+        beaconList.put(errorNorth, NeighbourNorth);
+        beaconList.put(errorSouth, NeighbourSouth);
+        beaconList.put(errorEast, NeighbourEast);
+        beaconList.put(errorWest, NeighbourWest);
+        beaconList.put(error, location);
+
+        // adds the errors to the arrayList
+        errorList.add(errorNorth);
+        errorList.add(errorSouth);
+        errorList.add(errorEast);
+        errorList.add(errorWest);
+        errorList.add(error);
+
+        // extracts the beacon with the smallest error value
+        Location nextLocation = beaconList.get(Collections.min(errorList));
+        this.nextLocation = nextLocation;
+        // clears the arraylist and hashmap
+        beaconList.clear();
+        errorList.clear();
+
+        // return the next location
+        return nextLocation;
+    }
+
+    // TODO: gotta check for the floor in the excel sheet
+    // maybe method replace cannot be used here
+    private int findFloor(ArrayList<iBeacon> beacons){
+        HashMap<Integer,Double> floorMap = new HashMap<>();
+        double currentPower = 0;
+        floorMap.put(1,0.0);
+        floorMap.put(2,0.0);
+        floorMap.put(3,0.0);
+        floorMap.put(4,0.0);
+        floorMap.put(5,0.0);
+        for (iBeacon beacon: beacons) {
+            currentPower = Math.pow(10, beacon.getRssi()/10);
+            double power = floorMap.get(beacon.getFloor()) + currentPower;
+            floorMap.remove(beacon.getFloor());
+            floorMap.put(beacon.getFloor(), power);
+        }
+        Set<Double> powers = new HashSet<Double>(floorMap.values());
+        double highestPower = Collections.max(powers);
+        int currentFloor = getKeyByValue(floorMap, highestPower);
+        return currentFloor;
+    }
+
+    public static <T, E> T getKeyByValue(Map<T, E> map, E value) {
+        for (Map.Entry<T, E> entry : map.entrySet()) {
+            if (Objects.equals(value, entry.getValue())) {
+                return entry.getKey();
+            }
+        }
         return null;
     }
 
-    private double calculateError(Location location, ArrayList<iBeacon> beacons) {
-        return 0.0;
+    private ArrayList<iBeacon> floorCorrection(ArrayList<iBeacon> beacons){
+        int floorDifference = 0;
+        for(iBeacon beacon: beacons){
+            if(myFloor == 0){
+                System.out.println("[ERROR:] floorCorrection is called while myFloor is not set");
+            }
+            else{
+                floorDifference = beacon.getFloor() - myFloor;
+                double newDistance = Math.sqrt(Math.pow(beacon.getDistance(), 2)-Math.pow((floorDifference*floorDistance), 2));
+                beacon.setDistance(newDistance);
+            }
+        }
+
+        return beacons;
     }
 
     public Location optimisation(ArrayList<iBeacon> beacons) {
+        //Fill list with new beacons
+        connectedBeacons = beacons;
+
+        //Find on which floor you are
+
+        //Correct the distance to other floors
+
+        //find average location of beacons
+        Location lastLocation = averageLocation(beacons);
+        double lastError = calculateError(lastLocation, beacons);
+
+        //check neighbours of starting location error
+
+        //move to lowest error => check those neighbours
+
+        //if all neighbours higher error return that location
+
         return null;
     }
-
-    //TODO: figure out the frequency of beacon probing
-    //TODO: how are we going to fill the beacon list
-
 }

@@ -10,6 +10,7 @@ public class iBeacon {
     private Location location;
     private int floor;
     private double distance;
+    private int rssi;
 
     /**
      * Disallowing empty constructor usage.
@@ -58,5 +59,13 @@ public class iBeacon {
 
     public void setDistance(double distance) {
         this.distance = distance;
+    }
+
+    public int getRssi() {
+        return rssi;
+    }
+
+    public void setRssi(int rssi) {
+        this.rssi = rssi;
     }
 }

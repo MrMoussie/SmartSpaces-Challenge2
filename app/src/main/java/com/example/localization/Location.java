@@ -10,7 +10,10 @@ public class Location {
     /**
      * Disallowing use of empty constructor
      */
-    private Location() {}
+    public Location() {
+        this.longitude = 0;
+        this.latitude = 0;
+    }
 
     /**
      * Create an instance of this location object.

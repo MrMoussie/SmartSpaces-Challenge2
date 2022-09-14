@@ -4,10 +4,14 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.WindowManager;
+
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.IndoorBuilding;
+import com.google.android.gms.maps.model.IndoorLevel;
+import com.google.android.gms.maps.model.LatLng;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -21,7 +25,9 @@ import org.altbeacon.beacon.Region;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * This class contains the main Google Maps activity.
@@ -34,6 +40,11 @@ public class MapsActivity extends AppCompatActivity {
 
     private SupportMapFragment smf;
     private BeaconManager beaconManager;
+    private ExcelReader excelReader;
+    private ArrayList<iBeacon> connectedBeacons;
+    private Location currentLocation;
+    private int currentFloor;
+    private static final int ZOOM_LEVEL = 20;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,13 +81,13 @@ public class MapsActivity extends AppCompatActivity {
     private void init() {
         this.smf.getMapAsync(this::onMapReady);
 
+        this.connectedBeacons = new ArrayList<>();
         try (InputStream in = getResources().getAssets().open(FILENAME)) {
-            new ExcelReader(in).fetchAllBeacons();
+            this.excelReader = new ExcelReader(in);
+            this.setupBeaconDetection();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        this.setupBeaconDetection();
     }
 
     /**
@@ -87,12 +98,31 @@ public class MapsActivity extends AppCompatActivity {
         this.beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(IBEACON));
         beaconManager.addRangeNotifier((beacons, region) -> {
             if (beacons.size() > 0) {
-                Beacon beacon = beacons.iterator().next();
-                System.out.println("[SYSTEM] list size: " + beacons.size());
-                Log.i(TAG, "Beacon detected: "+beacon.getDistance() +
-                        " meters away and the name is " + beacon.getBluetoothName() +
-                        " and RSSI is " + beacon.getRssi() + ".");
-                // TODO
+
+                for (Beacon beacon : beacons) {
+//                    System.out.println("[SYSTEM] FOUND DEVICE NAME " + beacon.getBluetoothName() + " WITH ADDRESS " + beacon.getBluetoothAddress()
+//                    + " WITH ID3 " + beacon.getId3());
+                    Optional<iBeacon> value = this.connectedBeacons.stream().filter(x -> x.getMac().equals(beacon.getBluetoothAddress())).findFirst();
+
+                    if (beacon.getRssi() < -60) {
+                        // Deletes the iBeacon if it exists in the set of active beacons
+                        value.ifPresent(iBeacon -> this.connectedBeacons.remove(iBeacon));
+                    } else {
+                        // Update beacon information if it already exists in the set of all active beacons
+                        if (value.isPresent()) {
+                            iBeacon currentBeacon = value.get();
+                            currentBeacon.setDistance(beacon.getDistance());
+                            currentBeacon.setRssi(beacon.getRssi());
+                        } else { // Retrieve beacon from excel reader and put it in the active set of beacons
+                            Optional<iBeacon> foundBeacon = this.excelReader.getAllBeacons().stream().filter(x -> x.getId() == beacon.getId3().toInt()).findFirst();
+                            foundBeacon.ifPresent(iBeacon -> {
+                                iBeacon.setDistance(beacon.getDistance());
+                                iBeacon.setRssi(beacon.getRssi());
+                                this.connectedBeacons.add(iBeacon);
+                            });
+                        }
+                    }
+                }
             }
         });
 
@@ -103,5 +133,33 @@ public class MapsActivity extends AppCompatActivity {
      * @param googleMap maps object passed when maps is ready
      */
     private void onMapReady(GoogleMap googleMap) {
+        currentLocation = new Location(6.85535541841856,52.2394526089864);
+        currentFloor = 4;
+        onLocationChange(googleMap);
+
+    }
+
+    private void onLocationChange(GoogleMap googleMap) {
+        LatLng currentPosition = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentPosition, ZOOM_LEVEL), 3000, new GoogleMap.CancelableCallback() {
+            @Override
+            public void onFinish() {
+                //Here you can take the snapshot or whatever you want
+                IndoorBuilding building = googleMap.getFocusedBuilding();
+                if(building != null) {
+                    List<IndoorLevel> levels = building.getLevels();
+                    //active the level you want to display on the map
+                    levels.get(levels.size() - currentFloor).activate();
+                }
+            }
+
+            @Override
+            public void onCancel() {
+
+            }
+        });
+
+        //TODO Put a marker on the position
+
     }
 }
