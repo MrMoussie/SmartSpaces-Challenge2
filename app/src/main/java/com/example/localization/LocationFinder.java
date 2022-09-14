@@ -1,9 +1,5 @@
 package com.example.localization;
 
-import android.os.Build;
-
-import androidx.annotation.RequiresApi;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -69,12 +65,6 @@ public class LocationFinder {
         return thisLocation;
     }
 
-    /**
-     * Method for calculating the error between the active beacons
-     * @param location
-     * @param beacons
-     * @return
-     */
     private double calculateError(Location location, ArrayList<iBeacon> beacons) {
         double error = 0.0;
         int N = beacons.size();
@@ -94,8 +84,8 @@ public class LocationFinder {
      * @return location where the localization should be updated
      */
     private Location compareNeighbours(Location location, double error, ArrayList<iBeacon> beacons){
-        HashMap<Double, Location> beaconList = new HashMap<Double, Location>();
-        ArrayList<Double> errorList = new ArrayList<Double>();
+        HashMap<Double, Location> beaconList = new HashMap<>();
+        ArrayList<Double> errorList = new ArrayList<>();
 
         //calculate position of 4 neighbours using stepSize
         Location NeighbourNorth = new Location(location.getLongitude(), location.getLatitude()+stepSize);
@@ -133,12 +123,12 @@ public class LocationFinder {
         // return the next location
         return nextLocation;
     }
-
     // TODO: gotta check for the floor in the excel sheet
     // maybe method replace cannot be used here
     private int findFloor(ArrayList<iBeacon> beacons){
         HashMap<Integer,Double> floorMap = new HashMap<>();
-        double currentPower = 0;
+        int currentFloor = -1;
+        double currentPower;
         floorMap.put(1,0.0);
         floorMap.put(2,0.0);
         floorMap.put(3,0.0);
@@ -150,9 +140,13 @@ public class LocationFinder {
             floorMap.remove(beacon.getFloor());
             floorMap.put(beacon.getFloor(), power);
         }
-        Set<Double> powers = new HashSet<Double>(floorMap.values());
+        Set<Double> powers = new HashSet<>(floorMap.values());
         double highestPower = Collections.max(powers);
-        int currentFloor = getKeyByValue(floorMap, highestPower);
+        try{
+            currentFloor = getKeyByValue(floorMap, highestPower);
+        } catch (NullPointerException e) {
+            System.out.println("Exception in class LocationFinder, method findFloor");
+        }
         return currentFloor;
     }
 
@@ -166,7 +160,7 @@ public class LocationFinder {
     }
 
     private ArrayList<iBeacon> floorCorrection(ArrayList<iBeacon> beacons){
-        int floorDifference = 0;
+        int floorDifference;
         for(iBeacon beacon: beacons){
             if(myFloor == 0){
                 System.out.println("[ERROR:] floorCorrection is called while myFloor is not set");
@@ -177,7 +171,6 @@ public class LocationFinder {
                 beacon.setDistance(newDistance);
             }
         }
-
         return beacons;
     }
 
