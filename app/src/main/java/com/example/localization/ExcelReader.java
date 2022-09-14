@@ -42,6 +42,9 @@ public class ExcelReader {
      * Fetches all the beacons from the excel file
      * @throws IOException
      */
+
+    // Iggy changed from void to ArrayList<iBeacon>
+    // in order to be able to access those values in other classes
     public void fetchAllBeacons() throws IOException {
         //Create Workbook instance holding reference to .xlsx file
         XSSFWorkbook workbook = new XSSFWorkbook(this.in);

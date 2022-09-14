@@ -1,8 +1,16 @@
 package com.example.localization;
 
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class LocationFinder {
 
@@ -105,6 +113,7 @@ public class LocationFinder {
         beaconList.put(errorSouth, NeighbourSouth);
         beaconList.put(errorEast, NeighbourEast);
         beaconList.put(errorWest, NeighbourWest);
+        beaconList.put(error, location);
 
         // adds the errors to the arrayList
         errorList.add(errorNorth);
@@ -113,11 +122,8 @@ public class LocationFinder {
         errorList.add(errorWest);
         errorList.add(error);
 
-        // gets the smallest error number
-        double smallestValue = Collections.min(errorList);
-
         // extracts the beacon with the smallest error value
-        Location nextLocation = beaconList.get(smallestValue);
+        Location nextLocation = beaconList.get(Collections.min(errorList));
         this.nextLocation = nextLocation;
         // clears the arraylist and hashmap
         beaconList.clear();
@@ -128,9 +134,34 @@ public class LocationFinder {
     }
 
     // TODO: gotta check for the floor in the excel sheet
+    // maybe method replace cannot be used here
     private int findFloor(ArrayList<iBeacon> beacons){
+        HashMap<Integer,Double> floorMap = new HashMap<>();
+        double currentPower = 0;
+        floorMap.put(1,0.0);
+        floorMap.put(2,0.0);
+        floorMap.put(3,0.0);
+        floorMap.put(4,0.0);
+        floorMap.put(5,0.0);
+        for (iBeacon beacon: beacons) {
+            currentPower = Math.pow(10, beacon.getRSSI()/10);
+            double power = floorMap.get(beacon.getFloor()) + currentPower;
+            floorMap.remove(beacon.getFloor());
+            floorMap.put(beacon.getFloor(), power);
+        }
+        Set<Double> powers = new HashSet<Double>(floorMap.values());
+        double highestPower = Collections.max(powers);
+        int currentFloor = getKeyByValue(floorMap, highestPower);
+        return currentFloor;
+    }
 
-        return 0;
+    public static <T, E> T getKeyByValue(Map<T, E> map, E value) {
+        for (Map.Entry<T, E> entry : map.entrySet()) {
+            if (Objects.equals(value, entry.getValue())) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     public Location optimisation(ArrayList<iBeacon> beacons) {
