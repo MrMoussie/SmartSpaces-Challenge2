@@ -37,6 +37,8 @@ public class MapsActivity extends AppCompatActivity {
     private static final String TAG = "[SYSTEM]";
     private static final String IBEACON = "m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24";
     private static final String FILENAME = "beacon_list.xlsx";
+    private static final int ZOOM_LEVEL = 20;
+    private static final int THRESHOLD = 18;
 
     private SupportMapFragment smf;
     private BeaconManager beaconManager;
@@ -44,7 +46,6 @@ public class MapsActivity extends AppCompatActivity {
     private ArrayList<iBeacon> connectedBeacons;
     private Location currentLocation;
     private int currentFloor;
-    private static final int ZOOM_LEVEL = 20;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,7 +105,7 @@ public class MapsActivity extends AppCompatActivity {
 //                    + " WITH ID3 " + beacon.getId3());
                     Optional<iBeacon> value = this.connectedBeacons.stream().filter(x -> x.getMac().equals(beacon.getBluetoothAddress())).findFirst();
 
-                    if (beacon.getRssi() < -60) {
+                    if (beacon.getRssi() < THRESHOLD) {
                         // Deletes the iBeacon if it exists in the set of active beacons
                         value.ifPresent(iBeacon -> this.connectedBeacons.remove(iBeacon));
                     } else {
@@ -133,12 +134,13 @@ public class MapsActivity extends AppCompatActivity {
      * @param googleMap maps object passed when maps is ready
      */
     private void onMapReady(GoogleMap googleMap) {
-        currentLocation = new Location(6.85535541841856,52.2394526089864);
-        currentFloor = 4;
-        onLocationChange(googleMap);
-
+        // TODO start getting location changes from LocationFinder
     }
 
+    /**
+     * This function gets called whenever a location is changed, which will update the map and floor number and put a marker
+     * @param googleMap
+     */
     private void onLocationChange(GoogleMap googleMap) {
         LatLng currentPosition = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
         googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentPosition, ZOOM_LEVEL), 3000, new GoogleMap.CancelableCallback() {
