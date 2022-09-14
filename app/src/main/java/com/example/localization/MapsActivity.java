@@ -3,12 +3,15 @@ package com.example.localization;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.WindowManager;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.IndoorBuilding;
 import com.google.android.gms.maps.model.IndoorLevel;
 import com.google.android.gms.maps.model.LatLng;
@@ -46,6 +49,7 @@ public class MapsActivity extends AppCompatActivity {
     private ArrayList<iBeacon> connectedBeacons;
     private Location currentLocation;
     private int currentFloor;
+    private Circle tracker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,6 +139,9 @@ public class MapsActivity extends AppCompatActivity {
      */
     private void onMapReady(GoogleMap googleMap) {
         // TODO start getting location changes from LocationFinder
+        currentLocation = new Location(6.85552831952323, 52.23930642989248);
+        currentFloor = 2;
+        onLocationChange(googleMap);
     }
 
     /**
@@ -156,12 +163,15 @@ public class MapsActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onCancel() {
-
-            }
+            public void onCancel() {}
         });
 
-        //TODO Put a marker on the position
-
+        // Shows current position of user on the map
+        this.tracker = googleMap.addCircle(new CircleOptions()
+                .center(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()))
+                .radius(0.75)
+                .strokeColor(Color.MAGENTA)
+                .strokeWidth(7f)
+                .fillColor(Color.WHITE));
     }
 }
