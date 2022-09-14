@@ -1,12 +1,9 @@
 package com.example.localization;
 
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
-import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.WindowManager;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -28,7 +25,6 @@ import org.altbeacon.beacon.Region;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
