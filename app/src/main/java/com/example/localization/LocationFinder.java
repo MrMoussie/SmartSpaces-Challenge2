@@ -14,6 +14,9 @@ public class LocationFinder {
     int myFloor = 0;
     double floorDistance = 3;
     Location nextLocation;
+    Location lastLocation;
+    Location currentLocation;
+    private double lastError = 0.0;
 
     final double stepSize = 0.00001;
 
@@ -120,6 +123,8 @@ public class LocationFinder {
         beaconList.clear();
         errorList.clear();
 
+        lastError = Collections.min(errorList);
+
         // return the next location
         return nextLocation;
     }
@@ -179,19 +184,27 @@ public class LocationFinder {
         connectedBeacons = beacons;
 
         //Find on which floor you are
+        myFloor = findFloor(beacons);
 
         //Correct the distance to other floors
+        beacons = floorCorrection(beacons);
 
         //find average location of beacons
-        Location lastLocation = averageLocation(beacons);
-        double lastError = calculateError(lastLocation, beacons);
+        lastLocation = averageLocation(beacons);
+        lastError = calculateError(lastLocation, beacons);
 
         //check neighbours of starting location error
+        currentLocation = compareNeighbours(lastLocation, lastError, beacons);
 
-        //move to lowest error => check those neighbours
-
-        //if all neighbours higher error return that location
-
-        return null;
+        //keep checking neighbours until input location is the same as output location
+        //this will only happen when all neighbours have more error
+        //meaning we found the point with lowest error and our best guess of our location
+        while(!(lastLocation.getLongitude()==currentLocation.getLongitude()&&
+                lastLocation.getLatitude()== currentLocation.getLatitude())){
+            lastLocation.setLongitude(currentLocation.getLongitude());
+            lastLocation.setLatitude(currentLocation.getLatitude());
+            currentLocation = compareNeighbours(lastLocation, lastError, beacons);
+        }
+        return currentLocation;
     }
 }
