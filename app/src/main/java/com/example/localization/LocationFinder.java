@@ -16,6 +16,7 @@ public class LocationFinder {
 
     ArrayList<iBeacon> connectedBeacons;
     int myFloor = 0;
+    double floorDistance = 3;
     Location nextLocation;
 
     final double stepSize = 0.00001;
@@ -164,13 +165,29 @@ public class LocationFinder {
         return null;
     }
 
+    private ArrayList<iBeacon> floorCorrection(ArrayList<iBeacon> beacons){
+        int floorDifference = 0;
+        for(iBeacon beacon: beacons){
+            if(myFloor == 0){
+                System.out.println("[ERROR:] floorCorrection is called while myFloor is not set");
+            }
+            else{
+                floorDifference = beacon.getFloor() - myFloor;
+                double newDistance = Math.sqrt(Math.pow(beacon.getDistance(), 2)-Math.pow((floorDifference*floorDistance), 2));
+                beacon.setDistance(newDistance);
+            }
+        }
+
+        return beacons;
+    }
+
     public Location optimisation(ArrayList<iBeacon> beacons) {
         //Fill list with new beacons
         connectedBeacons = beacons;
 
         //Find on which floor you are
 
-        //Remove all other floors
+        //Correct the distance to other floors
 
         //find average location of beacons
         Location lastLocation = averageLocation(beacons);
