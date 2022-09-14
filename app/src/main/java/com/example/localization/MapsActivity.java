@@ -59,7 +59,6 @@ public class MapsActivity extends AppCompatActivity {
                         Manifest.permission.BLUETOOTH_ADMIN,
                         Manifest.permission.ACCESS_FINE_LOCATION
                 ).withListener(new MultiplePermissionsListener() {
-                    @RequiresApi(api = Build.VERSION_CODES.N)
                     @Override
                     public void onPermissionsChecked(MultiplePermissionsReport multiplePermissionsReport) {
                         if (multiplePermissionsReport.areAllPermissionsGranted()) {
@@ -79,7 +78,6 @@ public class MapsActivity extends AppCompatActivity {
      * Initialization method for this class.
      * This method sets up permissions, tasks and initializes event listeners and managers.
      */
-    @RequiresApi(api = Build.VERSION_CODES.N)
     private void init() {
         this.smf.getMapAsync(this::onMapReady);
 
@@ -95,7 +93,6 @@ public class MapsActivity extends AppCompatActivity {
     /**
      * Sets up the BeaconManager and range notifier
      */
-    @RequiresApi(api = Build.VERSION_CODES.N)
     private void setupBeaconDetection() {
         this.beaconManager =  BeaconManager.getInstanceForApplication(this);
         this.beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(IBEACON));
