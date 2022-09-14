@@ -8,8 +8,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.WindowManager;
+
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.IndoorBuilding;
+import com.google.android.gms.maps.model.IndoorLevel;
+import com.google.android.gms.maps.model.LatLng;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
@@ -41,6 +46,9 @@ public class MapsActivity extends AppCompatActivity {
     private BeaconManager beaconManager;
     private ExcelReader excelReader;
     private ArrayList<iBeacon> connectedBeacons;
+    private Location currentLocation;
+    private int currentFloor;
+    private static final int ZOOM_LEVEL = 20;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +63,7 @@ public class MapsActivity extends AppCompatActivity {
                         Manifest.permission.BLUETOOTH_ADMIN,
                         Manifest.permission.ACCESS_FINE_LOCATION
                 ).withListener(new MultiplePermissionsListener() {
+                    @RequiresApi(api = Build.VERSION_CODES.N)
                     @Override
                     public void onPermissionsChecked(MultiplePermissionsReport multiplePermissionsReport) {
                         if (multiplePermissionsReport.areAllPermissionsGranted()) {
@@ -74,6 +83,7 @@ public class MapsActivity extends AppCompatActivity {
      * Initialization method for this class.
      * This method sets up permissions, tasks and initializes event listeners and managers.
      */
+    @RequiresApi(api = Build.VERSION_CODES.N)
     private void init() {
         this.smf.getMapAsync(this::onMapReady);
 
@@ -89,6 +99,7 @@ public class MapsActivity extends AppCompatActivity {
     /**
      * Sets up the BeaconManager and range notifier
      */
+    @RequiresApi(api = Build.VERSION_CODES.N)
     private void setupBeaconDetection() {
         this.beaconManager =  BeaconManager.getInstanceForApplication(this);
         this.beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(IBEACON));
@@ -129,5 +140,33 @@ public class MapsActivity extends AppCompatActivity {
      * @param googleMap maps object passed when maps is ready
      */
     private void onMapReady(GoogleMap googleMap) {
+        currentLocation = new Location(6.85535541841856,52.2394526089864);
+        currentFloor = 4;
+        onLocationChange(googleMap);
+
+    }
+
+    private void onLocationChange(GoogleMap googleMap) {
+        LatLng currentPosition = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentPosition, ZOOM_LEVEL), 3000, new GoogleMap.CancelableCallback() {
+            @Override
+            public void onFinish() {
+                //Here you can take the snapshot or whatever you want
+                IndoorBuilding building = googleMap.getFocusedBuilding();
+                if(building != null) {
+                    List<IndoorLevel> levels = building.getLevels();
+                    //active the level you want to display on the map
+                    levels.get(levels.size() - currentFloor).activate();
+                }
+            }
+
+            @Override
+            public void onCancel() {
+
+            }
+        });
+
+        //TODO Put a marker on the position
+
     }
 }
