@@ -145,7 +145,7 @@ public class LocationFinder {
         floorMap.put(4,0.0);
         floorMap.put(5,0.0);
         for (iBeacon beacon: beacons) {
-            currentPower = Math.pow(10, beacon.getRSSI()/10);
+            currentPower = Math.pow(10, beacon.getRssi()/10);
             double power = floorMap.get(beacon.getFloor()) + currentPower;
             floorMap.remove(beacon.getFloor());
             floorMap.put(beacon.getFloor(), power);
