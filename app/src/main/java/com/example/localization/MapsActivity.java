@@ -25,13 +25,11 @@ import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
 import org.altbeacon.beacon.Region;
-import org.json.JSONException;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This class contains the main Google Maps activity.
@@ -45,9 +43,11 @@ public class MapsActivity extends AppCompatActivity {
     private static final int THRESHOLD = 18;
 
     private SupportMapFragment smf;
+    private GoogleMap map;
     private BeaconManager beaconManager;
     private ExcelReader excelReader;
     private Api api;
+    private LocationFinder locationFinder;
     private ArrayList<iBeacon> connectedBeacons;
     private Location currentLocation;
     private int currentFloor;
@@ -90,13 +90,13 @@ public class MapsActivity extends AppCompatActivity {
 
         this.connectedBeacons = new ArrayList<>();
         this.api = new Api();
+        this.locationFinder = new LocationFinder();
 
         // Start API fetching on separate thread and wait for it to finish
         Thread apiThread = new Thread(api);
         apiThread.start();
         try {
             apiThread.join();
-            this.setupBeaconDetection();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -108,8 +108,10 @@ public class MapsActivity extends AppCompatActivity {
     private void setupBeaconDetection() {
         this.beaconManager =  BeaconManager.getInstanceForApplication(this);
         this.beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(IBEACON));
-        beaconManager.addRangeNotifier((beacons, region) -> {
+        this.beaconManager.addRangeNotifier((beacons, region) -> {
             if (beacons.size() > 0) {
+                // Keep track of whether or not the connected beacons set has been updated
+                AtomicBoolean updated = new AtomicBoolean(false);
 
                 for (Beacon beacon : beacons) {
 //                    System.out.println("[SYSTEM] FOUND DEVICE NAME " + beacon.getBluetoothName() + " WITH ADDRESS " + beacon.getBluetoothAddress()
@@ -118,22 +120,33 @@ public class MapsActivity extends AppCompatActivity {
 
                     if (beacon.getRssi() < THRESHOLD) {
                         // Deletes the iBeacon if it exists in the set of active beacons
-                        value.ifPresent(iBeacon -> this.connectedBeacons.remove(iBeacon));
+                        value.ifPresent(iBeacon -> {
+                            this.connectedBeacons.remove(iBeacon);
+                            updated.set(true);
+                        });
                     } else {
                         // Update beacon information if it already exists in the set of all active beacons
                         if (value.isPresent()) {
                             iBeacon currentBeacon = value.get();
                             currentBeacon.setDistance(beacon.getDistance());
                             currentBeacon.setRssi(beacon.getRssi());
+                            updated.set(true);
                         } else { // Retrieve beacon from excel reader and put it in the active set of beacons
                             Optional<iBeacon> foundBeacon = this.api.getAllBeacons().stream().filter(x -> x.getMac().equals(beacon.getBluetoothAddress())).findFirst();
                             foundBeacon.ifPresent(iBeacon -> {
                                 iBeacon.setDistance(beacon.getDistance());
                                 iBeacon.setRssi(beacon.getRssi());
                                 this.connectedBeacons.add(iBeacon);
+                                updated.set(true);
                             });
                         }
                     }
+                }
+
+                // If the connected beacons set has been updated, a new current position will be calculated and updated on the map
+                if (updated.get()) {
+                    this.currentLocation = this.locationFinder.optimisation(this.connectedBeacons);
+                    onLocationChange();
                 }
             }
         });
@@ -145,23 +158,20 @@ public class MapsActivity extends AppCompatActivity {
      * @param googleMap maps object passed when maps is ready
      */
     private void onMapReady(GoogleMap googleMap) {
-        // TODO start getting location changes from LocationFinder
-        currentLocation = new Location(6.85552831952323, 52.23930642989248);
-        currentFloor = 2;
-        onLocationChange(googleMap);
+        this.map = googleMap;
+        this.setupBeaconDetection();
     }
 
     /**
      * This function gets called whenever a location is changed, which will update the map and floor number and put a marker
-     * @param googleMap
      */
-    private void onLocationChange(GoogleMap googleMap) {
+    private void onLocationChange() {
         LatLng currentPosition = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
-        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentPosition, ZOOM_LEVEL), 3000, new GoogleMap.CancelableCallback() {
+        this.map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentPosition, ZOOM_LEVEL), 3000, new GoogleMap.CancelableCallback() {
             @Override
             public void onFinish() {
                 //Here you can take the snapshot or whatever you want
-                IndoorBuilding building = googleMap.getFocusedBuilding();
+                IndoorBuilding building = map.getFocusedBuilding();
                 if(building != null) {
                     List<IndoorLevel> levels = building.getLevels();
                     //active the level you want to display on the map
@@ -174,10 +184,24 @@ public class MapsActivity extends AppCompatActivity {
         });
 
         // Shows current position of user on the map
-        this.tracker = googleMap.addCircle(new CircleOptions()
-                .center(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()))
-                .radius(0.75)
-                .strokeColor(Color.MAGENTA)
+        if (this.tracker == null) {
+            this.tracker = this.map.addCircle(new CircleOptions()
+                    .center(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()))
+                    .radius(0.75)
+                    .strokeColor(Color.MAGENTA)
+                    .strokeWidth(7f)
+                    .fillColor(Color.WHITE));
+        } else {
+            this.tracker.setCenter(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()));
+        }
+    }
+
+    private void setBeaconMarker(GoogleMap map, Location location, double radius) {
+        // Shows current position of user on the map
+        map.addCircle(new CircleOptions()
+                .center(new LatLng(location.getLatitude(), location.getLongitude()))
+                .radius(radius)
+                .strokeColor(Color.CYAN)
                 .strokeWidth(7f)
                 .fillColor(Color.WHITE));
     }
