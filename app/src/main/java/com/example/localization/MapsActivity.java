@@ -25,6 +25,7 @@ import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconManager;
 import org.altbeacon.beacon.BeaconParser;
 import org.altbeacon.beacon.Region;
+import org.json.JSONException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +47,7 @@ public class MapsActivity extends AppCompatActivity {
     private SupportMapFragment smf;
     private BeaconManager beaconManager;
     private ExcelReader excelReader;
+    private Api api;
     private ArrayList<iBeacon> connectedBeacons;
     private Location currentLocation;
     private int currentFloor;
@@ -87,10 +89,15 @@ public class MapsActivity extends AppCompatActivity {
         this.smf.getMapAsync(this::onMapReady);
 
         this.connectedBeacons = new ArrayList<>();
-        try (InputStream in = getResources().getAssets().open(FILENAME)) {
-            this.excelReader = new ExcelReader(in);
+        this.api = new Api();
+
+        // Start API fetching on separate thread and wait for it to finish
+        Thread apiThread = new Thread(api);
+        apiThread.start();
+        try {
+            apiThread.join();
             this.setupBeaconDetection();
-        } catch (IOException e) {
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -119,7 +126,7 @@ public class MapsActivity extends AppCompatActivity {
                             currentBeacon.setDistance(beacon.getDistance());
                             currentBeacon.setRssi(beacon.getRssi());
                         } else { // Retrieve beacon from excel reader and put it in the active set of beacons
-                            Optional<iBeacon> foundBeacon = this.excelReader.getAllBeacons().stream().filter(x -> x.getId() == beacon.getId3().toInt()).findFirst();
+                            Optional<iBeacon> foundBeacon = this.api.getAllBeacons().stream().filter(x -> x.getMac().equals(beacon.getBluetoothAddress())).findFirst();
                             foundBeacon.ifPresent(iBeacon -> {
                                 iBeacon.setDistance(beacon.getDistance());
                                 iBeacon.setRssi(beacon.getRssi());

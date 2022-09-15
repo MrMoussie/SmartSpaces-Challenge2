@@ -19,15 +19,29 @@ public class iBeacon {
 
     /**
      * This constructor initializes a beacon with the given properties.
+     * Mainly used by the ExcelReader class.
      * @param id device_id
      * @param name device_name
      * @param mac mac_address
-     * @param location Location location object contains longitude and latitude
+     * @param location Location object contains longitude and latitude
      * @param floor floor number
      */
     public iBeacon(int id, String name, String mac, Location location, int floor) {
         this.id = id;
         this.name = name;
+        this.mac = mac;
+        this.location = location;
+        this.floor = floor;
+    }
+
+    /**
+     * This constructor initializes a beacon with the given properties.
+     * Mainly used by the API class.
+     * @param mac mac_address
+     * @param location Location object contains longitude and latitude
+     * @param floor floor number
+     */
+    public iBeacon(String mac, Location location, int floor) {
         this.mac = mac;
         this.location = location;
         this.floor = floor;
