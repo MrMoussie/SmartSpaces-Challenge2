@@ -119,11 +119,12 @@ public class LocationFinder {
         // extracts the beacon with the smallest error value
         Location nextLocation = beaconList.get(Collections.min(errorList));
         this.nextLocation = nextLocation;
+
+        lastError = Collections.min(errorList);
+
         // clears the arraylist and hashmap
         beaconList.clear();
         errorList.clear();
-
-        lastError = Collections.min(errorList);
 
         // return the next location
         return nextLocation;
